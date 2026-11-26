@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { PLATFORMS, dummyGenerationData } from "../assets/assets";
 import {
   ArrowRightIcon,
@@ -26,6 +26,21 @@ const AIComposer = () => {
   const [scheduledDate, setScheduledDate] = useState<string>("");
   const [scheduledTime, setScheduledTime] = useState<string>("");
   const [scheduling, setScheduling] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const schedulerTriggerRef = useRef<HTMLButtonElement>(null);
+  const schedulerId = useId();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (activeScheduler && dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }, [activeScheduler]);
+
+  const handleSchedulerClose = () => {
+    setActiveScheduler(null);
+    schedulerTriggerRef.current?.focus();
+  };
 
   const fetchGenerations = async () => {
     setGenerations(dummyGenerationData);
@@ -165,7 +180,10 @@ const AIComposer = () => {
 
                 <div className="flex items-center gap-2 pt-2">
                   <button
-                    onClick={() => setActiveScheduler(gen)}
+                    onClick={(event) => {
+                      schedulerTriggerRef.current = event.currentTarget;
+                      setActiveScheduler(gen);
+                    }}
                     className="flex-1 bg-slate-100 hover:bg-red-500 hover:text-white text-slate-600 texxs py-2.5 rounded-lg transition-all"
                   >
                     Schedule Post
@@ -192,12 +210,21 @@ const AIComposer = () => {
       {/* Scheduler Modal */}
 
       {activeScheduler && (
-        <div className="fixed inset-0 min-h-screen z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in float-in duration-300">
+        <dialog
+          ref={dialogRef}
+          aria-labelledby={`${schedulerId}-title`}
+          onClose={handleSchedulerClose}
+          className="m-auto w-[calc(100%-2rem)] max-w-2xl overflow-visible rounded-xl bg-transparent backdrop:bg-slate-900/40 backdrop:backdrop-blur-md animate-in float-in duration-300"
+        >
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-8 py-4 border-b border-slate-100 bg-slate-50/30">
-              <h3 className="text-slate-900">Schedule Generation</h3>
+              <h3 id={`${schedulerId}-title`} className="text-slate-900">
+                Schedule Generation
+              </h3>
               <button
-                onClick={() => setActiveScheduler(null)}
+                type="button"
+                aria-label="Close scheduling dialog"
+                onClick={() => dialogRef.current?.close()}
                 className="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors"
               >
                 <XIcon className="size-5" />
@@ -260,26 +287,44 @@ const AIComposer = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <CalendarIcon className="size-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <div>
+                    <label
+                      htmlFor={`${schedulerId}-date`}
+                      className="block mb-1 text-sm text-slate-600"
+                    >
+                      Date
+                    </label>
+                    <div className="relative">
+                      <CalendarIcon className="size-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
 
-                    <input
-                      type="date"
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md text-slate-900 text-sm focus:outline-none transition-all"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                    />
+                      <input
+                        id={`${schedulerId}-date`}
+                        type="date"
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md text-slate-900 text-sm focus:outline-none transition-all"
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                      />
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <ClockIcon className="size-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <div>
+                    <label
+                      htmlFor={`${schedulerId}-time`}
+                      className="block mb-1 text-sm text-slate-600"
+                    >
+                      Time
+                    </label>
+                    <div className="relative">
+                      <ClockIcon className="size-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
 
-                    <input
-                      type="time"
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md text-slate-900 text-sm focus:outline-none transition-all"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                    />
+                      <input
+                        id={`${schedulerId}-time`}
+                        type="time"
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md text-slate-900 text-sm focus:outline-none transition-all"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -297,7 +342,7 @@ const AIComposer = () => {
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );
