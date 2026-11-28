@@ -21,7 +21,10 @@ app.get("/", (_req: Request, res: Response) => {
 // Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
-  res.status(500).send(err?.data?.message || err?.message || "Internal Server Error");
+  const status = [err?.status, err?.statusCode].find(
+    (value) => Number.isInteger(value) && value >= 400 && value <= 599
+  ) ?? 500;
+  res.status(status).send(err?.data?.message || err?.message || "Internal Server Error");
 })
 
 app.listen(port, () => {
